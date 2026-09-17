@@ -288,6 +288,16 @@
       color: var(--muted);
     }
 
+    .tasks-card {
+      flex: 0 0 34%;
+      min-height: 0;
+    }
+
+    .news-card {
+      flex: 1;
+      min-height: 0;
+    }
+
     .tasks-footer {
       margin-top: auto;
       font-size: 0.78rem;
@@ -306,6 +316,78 @@
 
     .link:hover {
       text-decoration: underline;
+    }
+
+    /* Seznam Zprávy RSS */
+    .news-list {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .news-item {
+      display: block;
+      padding: 9px 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 8px;
+      color: var(--text);
+      text-decoration: none;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+    .news-item:hover {
+      background: rgba(197, 255, 0, 0.08);
+      color: var(--accent);
+    }
+
+    .news-meta {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .news-time {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .news-title {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      font-size: 0.84rem;
+      line-height: 1.3;
+    }
+
+    .news-state {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 8px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .news-footer {
+      margin-top: 10px;
+      padding-top: 9px;
+      border-top: 1px solid rgba(148, 163, 184, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.75rem;
     }
 
     /* Fullscreen button + tip */
@@ -369,6 +451,11 @@
         width: 100%;
         max-width: 100%;
         height: auto;
+      }
+
+      .tasks-card,
+      .news-card {
+        flex: none;
       }
     }
   </style>
@@ -495,9 +582,9 @@
 
     </div>
 
-    <!-- RIGHT COLUMN (Tasks) -->
+    <!-- RIGHT COLUMN (Tasks + News) -->
     <div class="col-right">
-      <section class="card" style="flex:1;">
+      <section class="card tasks-card">
         <div class="card-inner">
 
           <div class="card-header">
@@ -531,6 +618,34 @@
             <span>Zaškrtnutí se ukládá lokálně (v Chromu).</span>
             <a class="link" target="_blank" href="https://tasks.google.com/embed/list/~default?pli=1">
               Otevřít Google Tasks
+            </a>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="card news-card">
+        <div class="card-inner">
+
+          <div class="card-header">
+            <div>
+              <div class="title">
+                <span class="title-dot"></span>
+                Seznam Zprávy
+              </div>
+              <div class="subtitle">Nejnovější články · RSS</div>
+            </div>
+          </div>
+
+          <div class="news-list" id="news-list" aria-live="polite">
+            <div class="news-state">Načítám nejnovější zprávy…</div>
+          </div>
+
+          <div class="news-footer">
+            <span id="news-status">Aktualizace: --:--</span>
+            <a class="link" target="_blank" rel="noopener noreferrer"
+               href="https://www.seznamzpravy.cz/">
+              Všechny zprávy
             </a>
           </div>
 
@@ -728,6 +843,158 @@
     );
 
     loadTasks();
+
+
+    /* ---------- SEZNAM ZPRÁVY (RSS) ---------- */
+    const NEWS_FEED_URL = "https://www.seznamzpravy.cz/rss";
+    const NEWS_API_URL =
+      "https://api.rss2json.com/v1/api.json?rss_url=" +
+      encodeURIComponent(NEWS_FEED_URL);
+    const NEWS_CACHE_KEY = "dashboardSeznamNews";
+    const NEWS_REFRESH_INTERVAL = 15 * 60 * 1000;
+
+    function isAllowedNewsUrl(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" &&
+          (url.hostname === "www.seznamzpravy.cz" || url.hostname === "seznamzpravy.cz");
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function formatNewsDate(value) {
+      const match = String(value || "").match(
+        /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/
+      );
+
+      if (!match) return "";
+
+      const [, year, month, day, hour, minute] = match;
+      const now = new Date();
+      const isToday =
+        Number(year) === now.getFullYear() &&
+        Number(month) === now.getMonth() + 1 &&
+        Number(day) === now.getDate();
+
+      return isToday
+        ? `${hour}:${minute}`
+        : `${Number(day)}. ${Number(month)}. ${hour}:${minute}`;
+    }
+
+    function normaliseNewsItems(items) {
+      if (!Array.isArray(items)) return [];
+
+      return items
+        .filter(item => item && item.title && isAllowedNewsUrl(item.link))
+        .slice(0, 6)
+        .map(item => ({
+          title: String(item.title).trim(),
+          link: item.link,
+          pubDate: item.pubDate || ""
+        }));
+    }
+
+    function renderNews(items) {
+      const list = document.getElementById("news-list");
+      list.replaceChildren();
+
+      if (!items.length) {
+        const state = document.createElement("div");
+        state.className = "news-state";
+        state.textContent = "Nejsou dostupné žádné zprávy.";
+        list.appendChild(state);
+        return;
+      }
+
+      items.forEach(item => {
+        const link = document.createElement("a");
+        link.className = "news-item";
+        link.href = item.link;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        const meta = document.createElement("div");
+        meta.className = "news-meta";
+
+        const time = document.createElement("span");
+        time.className = "news-time";
+        time.textContent = formatNewsDate(item.pubDate);
+
+        const source = document.createElement("span");
+        source.textContent = "Seznam Zprávy";
+
+        const title = document.createElement("div");
+        title.className = "news-title";
+        title.textContent = item.title;
+
+        meta.append(time, source);
+        link.append(meta, title);
+        list.appendChild(link);
+      });
+    }
+
+    function saveNewsCache(items, updatedAt) {
+      try {
+        localStorage.setItem(
+          NEWS_CACHE_KEY,
+          JSON.stringify({ items, updatedAt: updatedAt.toISOString() })
+        );
+      } catch (e) {
+        console.warn("News cache error:", e);
+      }
+    }
+
+    function loadNewsCache() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(NEWS_CACHE_KEY));
+        if (!cached || !Array.isArray(cached.items)) return null;
+        return cached;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function loadNews() {
+      const status = document.getElementById("news-status");
+
+      try {
+        const res = await fetch(NEWS_API_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error(`RSS HTTP ${res.status}`);
+
+        const data = await res.json();
+        if (data.status !== "ok") {
+          throw new Error(data.message || "Neplatná odpověď RSS služby");
+        }
+
+        const items = normaliseNewsItems(data.items);
+        if (!items.length) throw new Error("RSS neobsahuje použitelné články");
+
+        const updatedAt = new Date();
+        renderNews(items);
+        saveNewsCache(items, updatedAt);
+        status.textContent = "Aktualizace: " + formatUpdateTime(updatedAt);
+      } catch (e) {
+        const cached = loadNewsCache();
+
+        if (cached && cached.items.length) {
+          renderNews(cached.items);
+          const cachedAt = new Date(cached.updatedAt);
+          status.textContent = Number.isNaN(cachedAt.getTime())
+            ? "Zobrazuji uložené zprávy"
+            : "Uloženo: " + formatUpdateTime(cachedAt);
+        } else {
+          const list = document.getElementById("news-list");
+          list.innerHTML = '<div class="news-state">Zprávy se nepodařilo načíst.</div>';
+          status.textContent = "Zdroj je nedostupný";
+        }
+
+        console.error("News loading error:", e);
+      }
+    }
+
+    loadNews();
+    setInterval(loadNews, NEWS_REFRESH_INTERVAL);
   </script>
 
 </body>
