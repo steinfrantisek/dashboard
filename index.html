@@ -161,15 +161,51 @@
     }
 
     /* Weather */
+    .weather-locations {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .weather-location {
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .weather-location:last-child {
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .weather-location-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .weather-location-name {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .weather-updated {
+      font-size: 0.72rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
     .weather-main {
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
-      margin-top: 12px;
+      margin-top: 5px;
     }
 
     .weather-temp {
-      font-size: 2.6rem;
+      font-size: 2.2rem;
       font-weight: 600;
     }
 
@@ -181,9 +217,9 @@
 
     .weather-extra {
       display: flex;
-      gap: 14px;
-      margin-top: 12px;
-      font-size: 0.8rem;
+      gap: 10px;
+      margin-top: 7px;
+      font-size: 0.76rem;
       color: var(--muted);
       flex-wrap: wrap;
     }
@@ -405,7 +441,7 @@
         </div>
       </section>
 
-    <!-- WEATHER PANEL -->
+      <!-- WEATHER PANEL -->
       <section class="card" style="flex:1;">
         <div class="card-inner">
 
@@ -563,8 +599,10 @@
 
 
     /* ---------- POČASÍ (YR.NO) ---------- */
-    const LAT = 50.724;
-    const LON = 15.171;
+    const WEATHER_LOCATIONS = [
+      { id: "jablonec", lat: 50.724, lon: 15.171 },
+      { id: "liska", lat: 50.8225, lon: 14.455 }
+    ];
 
     function mapSymbolCode(code) {
       if (!code) return "Bez popisu";
@@ -588,11 +626,26 @@
       return dict[base] || "Počasí";
     }
 
-    async function loadWeather() {
+    function formatUpdateTime(date) {
+      return date.getHours().toString().padStart(2, "0") + ":" +
+        date.getMinutes().toString().padStart(2, "0");
+    }
+
+    async function loadWeatherLocation(location) {
+      const tempElement = document.getElementById(`weather-temp-${location.id}`);
+      const descElement = document.getElementById(`weather-desc-${location.id}`);
+      const extraElement = document.getElementById(`weather-extra-${location.id}`);
+      const updatedElement = document.getElementById(`weather-updated-${location.id}`);
+
       try {
         const res = await fetch(
-          `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${LAT}&lon=${LON}`
+          `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${location.lat}&lon=${location.lon}`
         );
+
+        if (!res.ok) {
+          throw new Error(`MET Norway HTTP ${res.status}`);
+        }
+
         const data = await res.json();
 
         const nowPoint = data.properties.timeseries[0];
@@ -605,30 +658,27 @@
         const next = nowPoint.data.next_1_hours || nowPoint.data.next_6_hours;
         const descCode = next?.summary?.symbol_code || "";
 
-        document.getElementById("weather-temp").textContent =
-          Math.round(temp) + "°C";
-
-        document.getElementById("weather-desc").textContent =
-          mapSymbolCode(descCode);
-
-        const extra = document.getElementById("weather-extra");
-        extra.innerHTML = `
+        tempElement.textContent = Math.round(temp) + "°C";
+        descElement.textContent = mapSymbolCode(descCode);
+        extraElement.innerHTML = `
           <span><span class="bullet"></span> Teplota: ${temp.toFixed(1)} °C</span>
           <span><span class="bullet"></span> Vlhkost: ${humidity} %</span>
           <span><span class="bullet"></span> Vítr: ${wind.toFixed(1)} m/s</span>
         `;
 
-        const n = new Date();
-        document.getElementById("weather-updated").textContent =
-          "Aktualizace: " +
-          n.getHours().toString().padStart(2, "0") + ":" +
-          n.getMinutes().toString().padStart(2, "0");
-
+        updatedElement.textContent = "Aktualizace: " + formatUpdateTime(new Date());
       } catch (e) {
-        document.getElementById("weather-desc").textContent =
-          "Chyba načítání počasí";
+        tempElement.textContent = "--°C";
+        descElement.textContent = "Chyba načítání počasí";
+        extraElement.innerHTML = "";
         console.error(e);
       }
+    }
+
+    async function loadWeather() {
+      await Promise.allSettled(
+        WEATHER_LOCATIONS.map(loadWeatherLocation)
+      );
     }
 
     loadWeather();
