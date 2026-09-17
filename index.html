@@ -405,7 +405,7 @@
         </div>
       </section>
 
-      <!-- WEATHER PANEL -->
+    <!-- WEATHER PANEL -->
       <section class="card" style="flex:1;">
         <div class="card-inner">
 
@@ -415,23 +415,39 @@
                 <span class="title-dot"></span>
                 Počasí
               </div>
-              <div class="subtitle">Jablonec nad Nisou · Yr.no / MET Norway</div>
+              <div class="subtitle">Jablonec nad Nisou + Líska (Česká Kamenice)</div>
             </div>
           </div>
 
-          <div class="weather-main">
-            <div>
-              <div id="weather-temp" class="weather-temp">--°C</div>
-              <div id="weather-desc" class="weather-desc">Načítám počasí…</div>
+          <div class="weather-locations">
+            <div class="weather-location">
+              <div class="weather-location-header">
+                <div class="weather-location-name">Jablonec nad Nisou</div>
+                <div id="weather-updated-jablonec" class="weather-updated">Aktualizace: --:--</div>
+              </div>
+              <div class="weather-main">
+                <div>
+                  <div id="weather-temp-jablonec" class="weather-temp">--°C</div>
+                  <div id="weather-desc-jablonec" class="weather-desc">Načítám počasí…</div>
+                </div>
+              </div>
+              <div class="weather-extra" id="weather-extra-jablonec"></div>
             </div>
 
-            <div style="text-align:right; font-size:0.8rem; color:var(--muted);">
-              <div id="weather-city">Lokalita: Jablonec nad Nisou</div>
-              <div id="weather-updated">Aktualizace: --:--</div>
+            <div class="weather-location">
+              <div class="weather-location-header">
+                <div class="weather-location-name">Líska u České Kamenice</div>
+                <div id="weather-updated-liska" class="weather-updated">Aktualizace: --:--</div>
+              </div>
+              <div class="weather-main">
+                <div>
+                  <div id="weather-temp-liska" class="weather-temp">--°C</div>
+                  <div id="weather-desc-liska" class="weather-desc">Načítám počasí…</div>
+                </div>
+              </div>
+              <div class="weather-extra" id="weather-extra-liska"></div>
             </div>
           </div>
-
-          <div class="weather-extra" id="weather-extra"></div>
 
           <div class="pill-row">
             <div class="pill">Zdroj: api.met.no (Yr.no)</div>
