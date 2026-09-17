@@ -318,7 +318,33 @@
       text-decoration: underline;
     }
 
-    /* Seznam Zprávy RSS */
+    /* RSS news reader */
+    .news-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 7px;
+    }
+
+    .news-filter {
+      padding: 4px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.72);
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.68rem;
+      cursor: pointer;
+      transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+    }
+
+    .news-filter:hover,
+    .news-filter.active {
+      border-color: rgba(197, 255, 0, 0.8);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
     .news-list {
       flex: 1;
       min-height: 0;
@@ -388,6 +414,10 @@
       gap: 8px;
       color: var(--muted);
       font-size: 0.75rem;
+    }
+
+    .news-source-count {
+      color: var(--accent);
     }
 
     /* Fullscreen button + tip */
@@ -631,10 +661,23 @@
             <div>
               <div class="title">
                 <span class="title-dot"></span>
-                Seznam Zprávy
+                RSS Zprávy
               </div>
-              <div class="subtitle">Nejnovější články · RSS</div>
+              <div class="subtitle">Seznam · iDNES · Sport.cz</div>
             </div>
+          </div>
+
+          <div class="news-filters" role="tablist" aria-label="Zdroj zpráv">
+            <button class="news-filter active" type="button" role="tab"
+                    aria-selected="true" data-news-filter="all">Vše</button>
+            <button class="news-filter" type="button" role="tab"
+                    aria-selected="false" data-news-filter="seznam">Seznam</button>
+            <button class="news-filter" type="button" role="tab"
+                    aria-selected="false" data-news-filter="idnes">iDNES</button>
+            <button class="news-filter" type="button" role="tab"
+                    aria-selected="false" data-news-filter="fotbal">Fotbal</button>
+            <button class="news-filter" type="button" role="tab"
+                    aria-selected="false" data-news-filter="sport">Sport.cz</button>
           </div>
 
           <div class="news-list" id="news-list" aria-live="polite">
@@ -643,10 +686,7 @@
 
           <div class="news-footer">
             <span id="news-status">Aktualizace: --:--</span>
-            <a class="link" target="_blank" rel="noopener noreferrer"
-               href="https://www.seznamzpravy.cz/">
-              Všechny zprávy
-            </a>
+            <span class="news-source-count">4 RSS zdroje</span>
           </div>
 
         </div>
@@ -845,19 +885,47 @@
     loadTasks();
 
 
-    /* ---------- SEZNAM ZPRÁVY (RSS) ---------- */
-    const NEWS_FEED_URL = "https://www.seznamzpravy.cz/rss";
-    const NEWS_API_URL =
-      "https://api.rss2json.com/v1/api.json?rss_url=" +
-      encodeURIComponent(NEWS_FEED_URL);
-    const NEWS_CACHE_KEY = "dashboardSeznamNews";
+    /* ---------- RSS ZPRÁVY ---------- */
+    const NEWS_FEEDS = [
+      {
+        id: "seznam",
+        label: "Seznam Zprávy",
+        feedUrl: "https://www.seznamzpravy.cz/rss",
+        allowedHosts: ["www.seznamzpravy.cz", "seznamzpravy.cz"]
+      },
+      {
+        id: "idnes",
+        label: "iDNES",
+        feedUrl: "https://servis.idnes.cz/rss.aspx?c=zpravodaj",
+        allowedHosts: ["www.idnes.cz", "idnes.cz"]
+      },
+      {
+        id: "fotbal",
+        label: "iDNES Fotbal",
+        feedUrl: "https://servis.idnes.cz/rss.aspx?c=fotbalh",
+        allowedHosts: ["www.idnes.cz", "idnes.cz"]
+      },
+      {
+        id: "sport",
+        label: "Sport.cz",
+        feedUrl: "https://www.sport.cz/rss2",
+        allowedHosts: ["www.sport.cz", "sport.cz"]
+      }
+    ];
+    const NEWS_CACHE_KEY = "dashboardRssNewsV2";
     const NEWS_REFRESH_INTERVAL = 15 * 60 * 1000;
+    let newsByFeed = {};
+    let activeNewsFilter = "all";
 
-    function isAllowedNewsUrl(value) {
+    function getNewsApiUrl(feedUrl) {
+      return "https://api.rss2json.com/v1/api.json?rss_url=" +
+        encodeURIComponent(feedUrl);
+    }
+
+    function isAllowedNewsUrl(value, feed) {
       try {
         const url = new URL(value);
-        return url.protocol === "https:" &&
-          (url.hostname === "www.seznamzpravy.cz" || url.hostname === "seznamzpravy.cz");
+        return url.protocol === "https:" && feed.allowedHosts.includes(url.hostname);
       } catch (e) {
         return false;
       }
@@ -882,20 +950,58 @@
         : `${Number(day)}. ${Number(month)}. ${hour}:${minute}`;
     }
 
-    function normaliseNewsItems(items) {
+    function getNewsTimestamp(value) {
+      const match = String(value || "").match(
+        /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/
+      );
+
+      if (!match) return 0;
+
+      const [, year, month, day, hour, minute, second = "0"] = match;
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second)
+      ).getTime();
+    }
+
+    function normaliseNewsItems(items, feed) {
       if (!Array.isArray(items)) return [];
 
       return items
-        .filter(item => item && item.title && isAllowedNewsUrl(item.link))
-        .slice(0, 6)
+        .filter(item => item && item.title && isAllowedNewsUrl(item.link, feed))
         .map(item => ({
           title: String(item.title).trim(),
           link: item.link,
-          pubDate: item.pubDate || ""
+          pubDate: item.pubDate || "",
+          sourceId: feed.id,
+          sourceLabel: feed.label
         }));
     }
 
-    function renderNews(items) {
+    function getVisibleNews() {
+      if (activeNewsFilter === "all") {
+        const sortedItems = Object.values(newsByFeed)
+          .flat()
+          .sort((a, b) => getNewsTimestamp(b.pubDate) - getNewsTimestamp(a.pubDate));
+
+        const uniqueItems = new Map();
+        sortedItems.forEach(item => {
+          const articleUrl = item.link.split("#")[0];
+          if (!uniqueItems.has(articleUrl)) uniqueItems.set(articleUrl, item);
+        });
+
+        return Array.from(uniqueItems.values()).slice(0, 6);
+      }
+
+      return (newsByFeed[activeNewsFilter] || []).slice(0, 6);
+    }
+
+    function renderNews() {
+      const items = getVisibleNews();
       const list = document.getElementById("news-list");
       list.replaceChildren();
 
@@ -922,7 +1028,7 @@
         time.textContent = formatNewsDate(item.pubDate);
 
         const source = document.createElement("span");
-        source.textContent = "Seznam Zprávy";
+        source.textContent = item.sourceLabel;
 
         const title = document.createElement("div");
         title.className = "news-title";
@@ -934,11 +1040,11 @@
       });
     }
 
-    function saveNewsCache(items, updatedAt) {
+    function saveNewsCache(feeds, updatedAt) {
       try {
         localStorage.setItem(
           NEWS_CACHE_KEY,
-          JSON.stringify({ items, updatedAt: updatedAt.toISOString() })
+          JSON.stringify({ feeds, updatedAt: updatedAt.toISOString() })
         );
       } catch (e) {
         console.warn("News cache error:", e);
@@ -948,37 +1054,66 @@
     function loadNewsCache() {
       try {
         const cached = JSON.parse(localStorage.getItem(NEWS_CACHE_KEY));
-        if (!cached || !Array.isArray(cached.items)) return null;
+        if (!cached || !cached.feeds || typeof cached.feeds !== "object") return null;
         return cached;
       } catch (e) {
         return null;
       }
     }
 
+    async function fetchNewsFeed(feed) {
+      const res = await fetch(getNewsApiUrl(feed.feedUrl), { cache: "no-store" });
+      if (!res.ok) throw new Error(`${feed.label}: HTTP ${res.status}`);
+
+      const data = await res.json();
+      if (data.status !== "ok") {
+        throw new Error(`${feed.label}: ${data.message || "neplatná odpověď"}`);
+      }
+
+      const items = normaliseNewsItems(data.items, feed);
+      if (!items.length) throw new Error(`${feed.label}: žádné použitelné články`);
+      return items;
+    }
+
     async function loadNews() {
       const status = document.getElementById("news-status");
+      const cached = loadNewsCache();
 
       try {
-        const res = await fetch(NEWS_API_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error(`RSS HTTP ${res.status}`);
+        const results = await Promise.allSettled(NEWS_FEEDS.map(fetchNewsFeed));
+        const nextFeeds = {};
+        let freshFeedCount = 0;
 
-        const data = await res.json();
-        if (data.status !== "ok") {
-          throw new Error(data.message || "Neplatná odpověď RSS služby");
+        results.forEach((result, index) => {
+          const feed = NEWS_FEEDS[index];
+
+          if (result.status === "fulfilled") {
+            nextFeeds[feed.id] = result.value;
+            freshFeedCount += 1;
+          } else if (cached?.feeds?.[feed.id]) {
+            nextFeeds[feed.id] = cached.feeds[feed.id];
+          }
+        });
+
+        if (!Object.keys(nextFeeds).length) {
+          throw new Error("Žádný RSS zdroj není dostupný");
         }
 
-        const items = normaliseNewsItems(data.items);
-        if (!items.length) throw new Error("RSS neobsahuje použitelné články");
-
         const updatedAt = new Date();
-        renderNews(items);
-        saveNewsCache(items, updatedAt);
-        status.textContent = "Aktualizace: " + formatUpdateTime(updatedAt);
-      } catch (e) {
-        const cached = loadNewsCache();
+        newsByFeed = nextFeeds;
+        renderNews();
 
-        if (cached && cached.items.length) {
-          renderNews(cached.items);
+        if (freshFeedCount > 0) {
+          saveNewsCache(newsByFeed, updatedAt);
+        }
+
+        status.textContent = freshFeedCount === NEWS_FEEDS.length
+          ? "Aktualizace: " + formatUpdateTime(updatedAt)
+          : `Načteno: ${freshFeedCount}/${NEWS_FEEDS.length} zdrojů`;
+      } catch (e) {
+        if (cached && Object.keys(cached.feeds).length) {
+          newsByFeed = cached.feeds;
+          renderNews();
           const cachedAt = new Date(cached.updatedAt);
           status.textContent = Number.isNaN(cachedAt.getTime())
             ? "Zobrazuji uložené zprávy"
@@ -992,6 +1127,20 @@
         console.error("News loading error:", e);
       }
     }
+
+    document.querySelectorAll("[data-news-filter]").forEach(button => {
+      button.addEventListener("click", () => {
+        activeNewsFilter = button.dataset.newsFilter;
+
+        document.querySelectorAll("[data-news-filter]").forEach(item => {
+          const isActive = item === button;
+          item.classList.toggle("active", isActive);
+          item.setAttribute("aria-selected", String(isActive));
+        });
+
+        renderNews();
+      });
+    });
 
     loadNews();
     setInterval(loadNews, NEWS_REFRESH_INTERVAL);
