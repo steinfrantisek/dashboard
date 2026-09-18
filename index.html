@@ -230,6 +230,109 @@
       gap: 4px;
     }
 
+    .weather-card {
+      flex: 1 1 auto;
+      min-height: 305px;
+    }
+
+    /* CT24 live link */
+    .live-card {
+      flex: 0 0 auto;
+      padding-bottom: 16px;
+    }
+
+    .live-preview {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 16 / 9;
+      min-height: 155px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: var(--radius-lg);
+      background:
+        radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.14), transparent 28%),
+        linear-gradient(135deg, #071c54 0%, #0b48b7 62%, #1268df 100%);
+      color: #fff;
+      text-decoration: none;
+      transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .live-preview:hover,
+    .live-preview:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(197, 255, 0, 0.75);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+      outline: none;
+    }
+
+    .live-brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      font-size: 2.15rem;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+    }
+
+    .live-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      height: 46px;
+      padding: 0 8px;
+      border-radius: 7px;
+      background: #fff;
+      color: #0b48b7;
+      font-size: 1.65rem;
+      letter-spacing: -0.03em;
+    }
+
+    .live-play {
+      position: absolute;
+      right: 14px;
+      bottom: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(2, 6, 23, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-size: 0.74rem;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .live-status {
+      position: absolute;
+      top: 13px;
+      left: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(190, 24, 93, 0.92);
+      color: #fff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .live-status::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 7px rgba(255, 255, 255, 0.9);
+    }
+
     .bullet {
       width: 4px;
       height: 4px;
@@ -484,7 +587,9 @@
       }
 
       .tasks-card,
-      .news-card {
+      .news-card,
+      .weather-card,
+      .live-card {
         flex: none;
       }
     }
@@ -559,7 +664,7 @@
       </section>
 
       <!-- WEATHER PANEL -->
-      <section class="card" style="flex:1;">
+      <section class="card weather-card">
         <div class="card-inner">
 
           <div class="card-header">
@@ -607,6 +712,31 @@
             <div class="pill">Interval: 15 min</div>
           </div>
 
+        </div>
+      </section>
+
+      <!-- CT24 LIVE PANEL -->
+      <section class="card live-card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div>
+              <div class="title">
+                <span class="title-dot"></span>
+                ČT24 živě
+              </div>
+              <div class="subtitle">Česká televize · oficiální živé vysílání</div>
+            </div>
+          </div>
+
+          <a class="live-preview"
+             href="https://ct24.ceskatelevize.cz/video/zive-vysilani"
+             target="_blank"
+             rel="noopener noreferrer"
+             aria-label="Otevřít živé vysílání ČT24 v nové kartě">
+            <span class="live-status">ŽIVĚ</span>
+            <span class="live-brand">ČT <span class="live-number">24</span></span>
+            <span class="live-play"><span aria-hidden="true">▶</span> Spustit vysílání</span>
+          </a>
         </div>
       </section>
 
