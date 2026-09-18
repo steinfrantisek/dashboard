@@ -333,6 +333,50 @@
       box-shadow: 0 0 7px rgba(255, 255, 255, 0.9);
     }
 
+    .col-center {
+      overflow-y: auto;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(197, 255, 0, 0.45) transparent;
+    }
+
+    .col-center::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .col-center::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .col-center::-webkit-scrollbar-thumb {
+      background: rgba(197, 255, 0, 0.35);
+      border-radius: 999px;
+    }
+
+    .stream-card {
+      flex: 0 0 auto;
+      padding-bottom: 16px;
+    }
+
+    .stream-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      min-height: 155px;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: var(--radius-lg);
+      background: #020617;
+    }
+
+    .stream-frame iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
     .bullet {
       width: 4px;
       height: 4px;
@@ -589,8 +633,14 @@
       .tasks-card,
       .news-card,
       .weather-card,
-      .live-card {
+      .live-card,
+      .stream-card {
         flex: none;
+      }
+
+      .col-center {
+        overflow-y: visible;
+        padding-right: 0;
       }
     }
   </style>
@@ -737,6 +787,56 @@
             <span class="live-brand">ČT <span class="live-number">24</span></span>
             <span class="live-play"><span aria-hidden="true">↗</span> Otevřít vysílání</span>
           </a>
+        </div>
+      </section>
+
+      <!-- DW NEWS LIVE PANEL -->
+      <section class="card stream-card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div>
+              <div class="title">
+                <span class="title-dot"></span>
+                DW News živě
+              </div>
+              <div class="subtitle">Oficiální nepřetržité vysílání · anglicky</div>
+            </div>
+          </div>
+
+          <div class="stream-frame">
+            <iframe
+              src="https://www.youtube.com/embed/LuKwFajn37U?autoplay=1&amp;mute=1&amp;controls=1&amp;rel=0&amp;playsinline=1&amp;origin=https%3A%2F%2Fsteinfrantisek.github.io"
+              title="DW News – živé vysílání"
+              loading="eager"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowfullscreen></iframe>
+          </div>
+        </div>
+      </section>
+
+      <!-- SKY NEWS LIVE PANEL -->
+      <section class="card stream-card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div>
+              <div class="title">
+                <span class="title-dot"></span>
+                Sky News živě
+              </div>
+              <div class="subtitle">Oficiální nepřetržité vysílání · anglicky</div>
+            </div>
+          </div>
+
+          <div class="stream-frame">
+            <iframe
+              src="https://www.youtube.com/embed/Rlltj9N4rOQ?autoplay=1&amp;mute=1&amp;controls=1&amp;rel=0&amp;playsinline=1&amp;origin=https%3A%2F%2Fsteinfrantisek.github.io"
+              title="Sky News – živé vysílání"
+              loading="eager"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowfullscreen></iframe>
+          </div>
         </div>
       </section>
 
