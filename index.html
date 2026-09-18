@@ -400,42 +400,7 @@
       background: #020617;
     }
 
-    /* Tasks panel */
-    .tasks-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 5px;
-      font-size: 0.85rem;
-    }
-
-    .task {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
-      border-radius: var(--radius-md);
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(51, 65, 85, 0.8);
-    }
-
-    .task input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
-      accent-color: var(--accent);
-    }
-
-    .task span {
-      flex: 1;
-    }
-
-    .task span.done {
-      text-decoration: line-through;
-      color: var(--muted);
-    }
-
-    .tasks-card {
+    .clock-card {
       flex: 0 0 34%;
       min-height: 0;
     }
@@ -443,16 +408,6 @@
     .news-card {
       flex: 1;
       min-height: 0;
-    }
-
-    .tasks-footer {
-      margin-top: auto;
-      font-size: 0.78rem;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
     }
 
     .link {
@@ -630,7 +585,7 @@
         height: auto;
       }
 
-      .tasks-card,
+      .clock-card,
       .news-card,
       .weather-card,
       .live-card,
@@ -685,33 +640,8 @@
       </section>
     </div>
 
-    <!-- CENTER COLUMN (Clock, Weather) -->
+    <!-- CENTER COLUMN (Weather + live news) -->
     <div class="col-center">
-
-      <!-- CLOCK PANEL -->
-      <section class="card">
-        <div class="card-inner">
-
-          <div class="card-header">
-            <div>
-              <div class="title">
-                <span class="title-dot"></span>
-                12consulting · Dashboard
-              </div>
-              <div class="subtitle">Chromebook · osobní nástěnka</div>
-            </div>
-          </div>
-
-          <div id="time" class="time-main">--:--:--</div>
-          <div id="date" class="time-secondary">Načítám datum…</div>
-
-          <div class="pill-row">
-            <div class="pill pill-accent" id="next-refresh">Aktualizace dat: --:--</div>
-            <div class="pill">Časové pásmo: <span id="tz"></span></div>
-          </div>
-
-        </div>
-      </section>
 
       <!-- WEATHER PANEL -->
       <section class="card weather-card">
@@ -842,45 +772,28 @@
 
     </div>
 
-    <!-- RIGHT COLUMN (Tasks + News) -->
+    <!-- RIGHT COLUMN (Clock + News) -->
     <div class="col-right">
-      <section class="card tasks-card">
+      <!-- CLOCK PANEL -->
+      <section class="card clock-card">
         <div class="card-inner">
-
           <div class="card-header">
             <div>
               <div class="title">
                 <span class="title-dot"></span>
-                Úkoly dnes
+                12consulting · Dashboard
               </div>
-              <div class="subtitle">Lokální mini ToDo + Google Tasks</div>
+              <div class="subtitle">Chromebook · osobní nástěnka</div>
             </div>
           </div>
 
-          <div class="tasks-body" id="tasks-list">
-            <label class="task">
-              <input type="checkbox" data-task="porada" />
-              <span>Zápis z poslední porady – dokončit / zkontrolovat</span>
-            </label>
+          <div id="time" class="time-main">--:--:--</div>
+          <div id="date" class="time-secondary">Načítám datum…</div>
 
-            <label class="task">
-              <input type="checkbox" data-task="kotle" />
-              <span>Prověřit nabídky / servis elektrokotle</span>
-            </label>
-
-            <label class="task">
-              <input type="checkbox" data-task="dashboard" />
-              <span>Doladit / otestovat dashboard na Chromebooku</span>
-            </label>
+          <div class="pill-row">
+            <div class="pill pill-accent" id="next-refresh">Aktualizace dat: --:--</div>
+            <div class="pill">Časové pásmo: <span id="tz"></span></div>
           </div>
-
-          <div class="tasks-footer">
-            <span>Zaškrtnutí se ukládá lokálně (v Chromu).</span>
-            <a class="link" target="_blank" href="https://tasks.google.com/embed/list/~default?pli=1">
-              Otevřít Google Tasks
-            </a>
-          </div>
-
         </div>
       </section>
 
@@ -1081,38 +994,6 @@
 
     updateNextRefresh();
     setInterval(updateNextRefresh, 60000);
-
-
-    /* ---------- ÚKOLY (LOCALSTORAGE) ---------- */
-    const taskBoxes = document.querySelectorAll("#tasks-list input[type='checkbox']");
-    const KEY = "dashboardTasks";
-
-    function loadTasks() {
-      const saved = localStorage.getItem(KEY);
-      if (!saved) return;
-
-      const state = JSON.parse(saved);
-      taskBoxes.forEach(cb => {
-        const id = cb.dataset.task;
-        if (state[id]) cb.checked = true;
-        cb.closest(".task").querySelector("span").classList.toggle("done", cb.checked);
-      });
-    }
-
-    function saveTasks() {
-      const obj = {};
-      taskBoxes.forEach(cb => (obj[cb.dataset.task] = cb.checked));
-      localStorage.setItem(KEY, JSON.stringify(obj));
-    }
-
-    taskBoxes.forEach(cb =>
-      cb.addEventListener("change", () => {
-        cb.closest(".task").querySelector("span").classList.toggle("done", cb.checked);
-        saveTasks();
-      })
-    );
-
-    loadTasks();
 
 
     /* ---------- RSS ZPRÁVY ---------- */
